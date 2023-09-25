@@ -316,7 +316,7 @@ class Player:
                     furtherAction = StringPlus(StringPlus(f"{actionDict['Reference']} do you want to {actionDict['Name']}?\n").inputSlow()).ignoreFormat()
                     for i in self.Inventory[actionDict["Filter"]]:
                         if StringPlus(i.Name).ignoreFormat() == furtherAction:
-                            {True:optionList.append,False:{Consumables:self.consume}[actionDict["Filter"]]}[i.Type == Pets](i)
+                            {Pets:optionList.append,Consumables:self.consume}[actionDict["Filter"]](i)
                             if i.Type != Pets:
                                 return True
                     if len(optionList) > 1:
