@@ -83,6 +83,7 @@ class Pets(GameObject):
             self.__happiness = 0.0
             self.__isHungry = False
             self.__isThirsty = False
+            self.__isEquipped = False
     @staticmethod
     def __repr__() -> str:
         return "Pets"
@@ -116,6 +117,33 @@ class Pets(GameObject):
     @IsThirsty.setter
     def IsThirsty(self,inputIsThirsty:bool):
         self.__isThirsty = inputIsThirsty
+    @property
+    def IsEquipped(self) -> bool:
+        return self.__isEquipped
+    @IsEquipped.setter
+    def IsEquipped(self,inputIsEquipped:bool):
+        self.__isEquipped = inputIsEquipped
+    @staticmethod
+    def handleMultiplePets(inputPet:'Pets',optionList:list,functionToBeCalled) -> bool:                                     # TODO: MAKE DECORATOR
+        while True:
+            try:
+                StringPlus(f"you have multiple of {inputPet.Name}\n").printSlow()
+                for i in optionList:
+                    StringPlus(f" - {i.Name} (LVL {i.Level}{' - EQUIPPED' if i.IsEquipped else ''})\n").printSlow()
+                petChoice = StringPlus("Which one? (LVL)\n").inputSlow()
+                if StringPlus(petChoice).ignoreFormat() == "x":
+                    return False
+                else:
+                    petChoice = int(petChoice)
+            except ValueError:
+                StringPlus(f"that isn't an integer\n").printSlow()
+                StringPlus.barrier()
+            for i in optionList:
+                if i.Level == petChoice:
+                    functionToBeCalled(i)
+                    return True
+            StringPlus(f"no pet had a level of {petChoice}\n")
+            StringPlus.barrier()
     def randomTask(self):
         if SystemFunctions.weightedRandomChoice(((True,3),(False,5)),1)[0]:
             if random.randint(1,2) == 1:
@@ -134,6 +162,7 @@ class Pets(GameObject):
         return returnPrice
     def equipUnequip(self,inputEquipUnequip:bool):
         StringPlus(f"{self.Name} was {'equipped' if inputEquipUnequip else 'unequipped'}\n").printSlow()
+        self.IsEquipped = inputEquipUnequip
         StringPlus.barrier()
 class Consumables(GameObject):
     def __init__(self,inputDictionary:dict):
@@ -268,7 +297,7 @@ class Player:
                 for i in self.Inventory:
                     if self.Inventory[i] != []:
                         StringPlus(f"|--{i({})}--|\n").printSlow()
-                        [StringPlus(f" - {o.Name} ({o.Quantity if (o.Type in (Consumables,Collectables)) else f'LVL {o.Level} - EQUIPPED' if ((invFilter,self.EquippedPet) == (Pets,i)) else f'LVL {o.Level}' if (o.Type == Pets) else ''})\n").printSlow() for o in self.Inventory[i]]
+                        [StringPlus(f" - {o.Name} ({f'LVL {o.Level} - EQUIPPED' if ((o.Type,self.EquippedPet) == (Pets,o)) else f'LVL {o.Level}' if (o.Type == Pets) else o.Quantity if (o.Type in (Consumables,Collectables)) else ''})\n").printSlow() for o in self.Inventory[i]]
                 StringPlus.barrier()
                 return True
             else:
@@ -280,6 +309,7 @@ class Player:
                 StringPlus(f"|--{invFilter({})}--|\n").printSlow()
                 [StringPlus(f" - {i.Name} ({f'LVL {i.Level} - EQUIPPED' if ((invFilter,self.EquippedPet) == (Pets,i)) else f'LVL {i.Level}' if (invFilter == Pets) else i.Quantity if (invFilter in (Consumables,Collectables)) else ''})\n").printSlow() for i in self.Inventory[invFilter]]
                 StringPlus.barrier()
+                return True
             else:
                 StringPlus(f"you have no {invFilter({})}\n").printSlow()
                 StringPlus.barrier()
@@ -312,7 +342,8 @@ class Player:
                     return False
                 elif StringPlus(inventoryAction).ignoreFormat() in ("e","c"):
                     actionDict = {"e":{"Name":"Equip","Filter":Pets,"Reference":"who"},"c":{"Name":"Consume","Filter":Consumables,"Reference":"what"}}[StringPlus(inventoryAction).ignoreFormat()]
-                    self.displayInventory(actionDict["Filter"])
+                    if not self.displayInventory(actionDict["Filter"]):
+                        return False
                     furtherAction = StringPlus(StringPlus(f"{actionDict['Reference']} do you want to {actionDict['Name']}?\n").inputSlow()).ignoreFormat()
                     for i in self.Inventory[actionDict["Filter"]]:
                         if StringPlus(i.Name).ignoreFormat() == furtherAction:
@@ -320,22 +351,8 @@ class Player:
                             if i.Type != Pets:
                                 return True
                     if len(optionList) > 1:
-                        while True:
-                            try:
-                                petChoice = StringPlus(f"you have multiple of {furtherAction}\nwhich one? (x) (lvl)\n").inputSlow()
-                                if StringPlus(petChoice).ignoreFormat() == "x":
-                                    return False
-                                else:
-                                    petChoice = int(petChoice)
-                            except ValueError:
-                                StringPlus(f"that isn't an integer\n").printSlow()
-                                StringPlus.barrier()
-                            for i in optionList:
-                                if i.Level == petChoice:
-                                    self.equipPet(i)
-                                    return True
-                            StringPlus(f"no pet had a level of {petChoice}\n")
-                            StringPlus.barrier()
+                        Pets.handleMultiplePets(optionList[0],optionList,self.equipPet)
+                        return True
                     elif optionList == 1:
                         self.equipPet(optionList[0])
                         return True
