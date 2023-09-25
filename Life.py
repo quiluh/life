@@ -347,10 +347,4 @@ class Main():
         player = Player(StringPlus(f"what is your name?\n").inputSlow())
         StringPlus(f"welcome {player.Name}\n").printSlow()
         StringPlus.barrier()
-        player.addToInventory(GameData.dog["Type"](GameData.dog))
-        player.addToInventory(GameData.dog["Type"](GameData.dog))
-        player.addToInventory(GameData.apple["Type"](GameData.apple))
-        player.addToInventory(GameData.apple["Type"](GameData.apple))
-        while True:
-            player.actInventory()
 Main.main()
