@@ -45,7 +45,6 @@ class GameObject:
         if inputDictionary != {}:
             self.__name = inputDictionary["Name"]
             self.__price = inputDictionary["Price"]
-            self.__type = inputDictionary["Type"]
             self.__quantity = 1
             self.__demandPrice = inputDictionary["Price"]
     @property
@@ -57,9 +56,6 @@ class GameObject:
     @Price.setter
     def Price(self,inputPrice:float):
         self.__price = SystemFunctions.minMax(inputPrice,1,float("inf"))
-    @property
-    def Type(self) -> 'GameObject':
-        return self.__type
     @property
     def Quantity(self) -> int:
         return self.__quantity
@@ -264,23 +260,23 @@ class Player:
     def EquippedPet(self,inputPet:Union[Pets,None]):
         self.__equippedPet = inputPet
     def addToInventory(self,inputObject:GameObject) -> None:
-        if inputObject.Type in (Consumables,Collectables):
+        if inputObject.__class__ in (Consumables,Collectables):
             for i in self.Inventory[type(inputObject)]:
                 if i.Name == inputObject.Name:
                     i.Quantity += 1
                     return
         self.Inventory[type(inputObject)].append(inputObject)
     def removeFromInventory(self,inputObject:GameObject,inputAge:Union[None,int]) -> bool:
-        if inputObject.Type in (Consumables,Collectables):
-            for i in self.Inventory[inputObject.Type]:
+        if inputObject.__class__ in (Consumables,Collectables):
+            for i in self.Inventory[inputObject.__class__]:
                 if i.Name == inputObject.Name:
                     i.Quantity -= 1
                     if i.Quantity <= 0:
-                        self.Inventory[inputObject.Type].remove(i) 
+                        self.Inventory[inputObject.__class__].remove(i) 
                         del i
                     return True
             return False
-        elif inputObject.Type == Pets:
+        elif inputObject.__class__ == Pets:
             petList = [i for i in self.Inventory[Pets] if ((i.Name,i.Age) == (inputObject.Name,inputAge))]
             if len(petList) != 0:
                 self.Inventory[Pets].remove(petList[0])
@@ -297,7 +293,7 @@ class Player:
                 for i in self.Inventory:
                     if self.Inventory[i] != []:
                         StringPlus(f"|--{i({})}--|\n").printSlow()
-                        [StringPlus(f" - {o.Name} ({f'LVL {o.Level} - EQUIPPED' if ((o.Type,self.EquippedPet) == (Pets,o)) else f'LVL {o.Level}' if (o.Type == Pets) else o.Quantity if (o.Type in (Consumables,Collectables)) else ''})\n").printSlow() for o in self.Inventory[i]]
+                        [StringPlus(f" - {o.Name} ({f'LVL {o.Level} - EQUIPPED' if ((o.__class__,self.EquippedPet) == (Pets,o)) else f'LVL {o.Level}' if (o.__class__ == Pets) else o.Quantity if (o.__class__ in (Consumables,Collectables)) else ''})\n").printSlow() for o in self.Inventory[i]]
                 StringPlus.barrier()
                 return True
             else:
@@ -331,7 +327,7 @@ class Player:
             return False
     def equipPet(self,inputPet:Union[Pets,None]):
         self.EquippedPet = inputPet
-        if self.EquippedPet.Type == Pets:
+        if self.EquippedPet.__class__ == Pets:
             self.EquippedPet.equipUnequip(True)
     def actInventory(self) -> bool:
         optionList = []
@@ -348,7 +344,7 @@ class Player:
                     for i in self.Inventory[actionDict["Filter"]]:
                         if StringPlus(i.Name).ignoreFormat() == furtherAction:
                             {Pets:optionList.append,Consumables:self.consume}[actionDict["Filter"]](i)
-                            if i.Type != Pets:
+                            if i.__class__ != Pets:
                                 return True
                     if len(optionList) > 1:
                         Pets.handleMultiplePets(optionList[0],optionList,self.equipPet)
