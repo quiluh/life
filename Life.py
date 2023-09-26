@@ -140,13 +140,16 @@ class Pets(GameObject):
                     return True
             StringPlus(f"no pet had a level of {petChoice}\n")
             StringPlus.barrier()
+    def display(self):
+        displayName = f"|--{self.Name} ({self.Level})--|" if self.Nickname == "" else f"|--{self.Nickname} ({self.Name}) ({self.Level})--|"
+        [StringPlus(f"{i}\n").printSlow() for i in (displayName,f"happiness: {self.Happiness} / 100",f" - {'hungry' if self.IsHungry else 'full'}",f" - {'thirsty' if self.IsThirsty else 'hydrated'}")]
     def randomTask(self):
         if SystemFunctions.weightedRandomChoice(((True,3),(False,5)),1)[0]:
             if random.randint(1,2) == 1:
                 self.IsHungry = True
             else:
                 self.IsThirsty = True
-    def feed(self,inputFood:'Consumables') -> float:
+    def feed(self,inputFood:'Consumables') -> float:        # TODO: CLEAN THIS FUNCTION UP
         returnPrice = 0.0
         if inputFood.AffectsFeed:
             self.IsHungry = False
@@ -155,6 +158,8 @@ class Pets(GameObject):
             self.IsThirsty = False
             returnPrice += Pets.thirstyPrice
         self.Happiness += inputFood.HappinessEffect
+        StringPlus(f"you fed {self.Name} {inputFood.Name}\n").printSlow()
+        StringPlus.barrier()
         return returnPrice
     def equipUnequip(self,inputEquipUnequip:bool):
         StringPlus(f"{self.Name} was {'equipped' if inputEquipUnequip else 'unequipped'}\n").printSlow()
@@ -329,11 +334,26 @@ class Player:
         self.EquippedPet = inputPet
         if self.EquippedPet.__class__ == Pets:
             self.EquippedPet.equipUnequip(True)
+    def actInteractPet(self) -> bool:
+        while True:
+            self.EquippedPet.display()
+            petAction = StringPlus(f"what is your action? (x)\n - feed (f)\n").inputSlow()
+            if StringPlus(petAction).ignoreFormat() == "x":
+                return False
+            elif StringPlus(petAction).ignoreFormat() in ("f",):
+                if self.displayInventory(Consumables):
+                    chosenConsumable = StringPlus(f"what do you want to feed {self.EquippedPet.Name}? (x)\n").inputSlow()
+                    for i in self.Inventory[Consumables]:
+                        if StringPlus(i.Name).ignoreFormat() == StringPlus(chosenConsumable).ignoreFormat():
+                            self.feedPet(i)
+                            return True
+            StringPlus(f"that isn't an option\n").printSlow()
+            StringPlus.barrier()
     def actInventory(self) -> bool:
         optionList = []
         if self.displayInventory(None):
             while True:
-                inventoryAction = StringPlus(f"what is your action? (x)\n - EQUIP PET (E)\n - CONSUME (C)\n").inputSlow()
+                inventoryAction = StringPlus(f"what is your action? (x)\n - EQUIP PET (E)\n - CONSUME (C)\n - INTERACT PET (I)\n").inputSlow()
                 if StringPlus(inventoryAction).ignoreFormat() == "x":
                     return False
                 elif StringPlus(inventoryAction).ignoreFormat() in ("e","c"):
@@ -349,11 +369,21 @@ class Player:
                     if len(optionList) > 1:
                         Pets.handleMultiplePets(optionList[0],optionList,self.equipPet)
                         return True
-                    elif optionList == 1:
+                    elif len(optionList) == 1:
                         self.equipPet(optionList[0])
                         return True
                     StringPlus(f"that isn't an option\n").printSlow()
                     StringPlus.barrier()
+                elif StringPlus(inventoryAction).ignoreFormat() == "i":
+                    if self.EquippedPet != None:
+                        self.actInteractPet()
+                        return True
+                    else:
+                        StringPlus(f"you don't have a pet equipped\n").printSlow()
+                        StringPlus.barrier()
+                        return False
+                StringPlus(f"that isn't an option\n").printSlow()
+                StringPlus.barrier()
 class Main():
     @staticmethod
     def main():
