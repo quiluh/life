@@ -53,9 +53,6 @@ class GameObject:
     @property
     def Price(self) -> float:
         return self.__price
-    @Price.setter
-    def Price(self,inputPrice:float):
-        self.__price = SystemFunctions.minMax(inputPrice,1,float("inf"))
     @property
     def Quantity(self) -> int:
         return self.__quantity
@@ -211,11 +208,31 @@ class Collectables(GameObject):
     @staticmethod
     def __repr__() -> str:
         return "Collectables"
+class Npc():
+    def __init__(self,inputDictionary:dict):
+        self.__name = inputDictionary["Name"]
+        self.__stock = inputDictionary["Stock"]
+        self.__intelligence = random.randint(inputDictionary["Minimum Intelligence"],inputDictionary["Maximum Intelligence"])
+        self.__emotionalIntelligence = random.randint(inputDictionary["Minimum Emotional Intelligence"],inputDictionary["Maximum Emotional Intelligence"])
+    @property
+    def Name(self) -> str:
+        return self.__name
+    @property
+    def Stock(self) -> list:
+        return self.__stock
+    @property
+    def Intelligence(self) -> int:
+        return self.__intelligence
+    @property
+    def EmotionalIntelligence(self) -> int:
+        return self.__emotionalIntelligence
 class GameData:
     # PETS
     dog = {"Name":"Dog","Price":15.0,"Type":Pets}
     # CONSUMABLES
     apple = {"Name":"Apple","Price":1.5,"Type":Consumables,"Happiness Effect":1.0,"Affects Feed":True,"Affects Drink":False,"Consume Function":ConsumablesOptions.eat}
+    # NPCS
+    tempTemplate = {"Name":"STR","Stock":[],"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0}
 class Player:
     def __init__(self,name):
         self.__name = name
