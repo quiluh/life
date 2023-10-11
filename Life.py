@@ -33,9 +33,9 @@ class SystemFunctions:
     def weightedRandomChoice(inputList:tuple,inputAmount:int) -> list:  #((option,weight),(option,weight))
         optionList = []
         probabilityTuple = []
-        for i in inputList:
-            optionList.append(i[0])
-            probabilityTuple.append(i[1])
+        for i,o in inputList:
+            optionList.append(i)
+            probabilityTuple.append(o)
         return random.choices(optionList,weights=tuple(probabilityTuple),k=inputAmount)
     @staticmethod
     def minMax(inputValue:Union[int,float],minVal:Union[int,float],maxVal:Union[int,float]) -> Union[int,float]:
