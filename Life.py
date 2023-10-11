@@ -212,8 +212,12 @@ class Npc():
     def __init__(self,inputDictionary:dict):
         self.__name = inputDictionary["Name"]
         self.__stock = inputDictionary["Stock"]
+        self.changeStockPrices()
         self.__intelligence = random.randint(inputDictionary["Minimum Intelligence"],inputDictionary["Maximum Intelligence"])
+        self.__maxIntellignece = inputDictionary["Maximum Intelligence"]
         self.__emotionalIntelligence = random.randint(inputDictionary["Minimum Emotional Intelligence"],inputDictionary["Maximum Emotional Intelligence"])
+        self.__maxEmotionalIntellignece = inputDictionary["Maximum Emotional Intelligence"]
+        self.__balance = random.randint(inputDictionary[0],inputDictionary[1])
     @property
     def Name(self) -> str:
         return self.__name
@@ -224,15 +228,36 @@ class Npc():
     def Intelligence(self) -> int:
         return self.__intelligence
     @property
+    def MaxIntelligence(self) -> int:
+        return self.__maxIntellignece
+    @property
     def EmotionalIntelligence(self) -> int:
         return self.__emotionalIntelligence
+    @property
+    def MaxEmotionalIntelligence(self) -> int:
+        return self.__maxEmotionalIntellignece
+    @property
+    def Balance(self) -> float:
+        return self.__balance
+    @Balance.setter
+    def Balance(self,inputBalance:float):
+        self.__balance = inputBalance
+    def calculateSellPrice(self,inputItem:GameObject) -> float:
+        offset = (2,4) if self.Intelligence > self.EmotionalIntelligence else (-2,2)
+        return (inputItem.Price * (1 + (self.Intelligence / (1.5 * self.MaxIntelligence)))) + random.randint(offset[0],offset[1])
+    def calculateDemandPrice(self,inputItem:GameObject) -> float:
+        offset = (-4,0) if self.Intelligence > self.EmotionalIntelligence else (0,5)
+        return (inputItem.Price * (1 + (self.Intelligence / (1.5 * self.MaxIntelligence)))) + random.randint(offset[0],offset[1])
+    def changeStockPrices(self):
+        for i in self.Stock:
+            i.DemandPrice = self.calculateSellPrice(i)
 class GameData:
     # PETS
     dog = {"Name":"Dog","Price":15.0,"Type":Pets}
     # CONSUMABLES
     apple = {"Name":"Apple","Price":1.5,"Type":Consumables,"Happiness Effect":1.0,"Affects Feed":True,"Affects Drink":False,"Consume Function":ConsumablesOptions.eat}
     # NPCS
-    tempTemplate = {"Name":"STR","Stock":[],"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0}
+    tempTemplate = {"Name":"STR","Stock":[],"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0,"Balance":(0,0)}
 class Player:
     def __init__(self,name):
         self.__name = name
