@@ -141,12 +141,13 @@ class Pets(GameObject):
         displayName = f"|--{self.Name} ({self.Level})--|" if self.Nickname == "" else f"|--{self.Nickname} ({self.Name}) ({self.Level})--|"
         [StringPlus(f"{i}\n").printSlow() for i in (displayName,f"happiness: {self.Happiness} / 100",f" - {'hungry' if self.IsHungry else 'full'}",f" - {'thirsty' if self.IsThirsty else 'hydrated'}")]
     def randomTask(self):
-        if SystemFunctions.weightedRandomChoice(((True,3),(False,5)),1)[0]:
-            if random.randint(1,2) == 1:
-                self.IsHungry = True
-            else:
-                self.IsThirsty = True
-    def feed(self,inputFood:'Consumables') -> float:        # TODO: CLEAN THIS FUNCTION UP
+        def handleHunger(inputHunger:bool):
+            self.IsHungry = inputHunger
+        def handleThirst(inputThirst:bool):
+            self.IsThirsty = inputThirst
+        if SystemFunctions.weightedRandomChoice(((True,3),(False,5)),1)[0]:     # TODO: MAKE MORE READABLE
+            SystemFunctions.weightedRandomChoice(((handleHunger,1),(handleThirst,1)),1)[0]()
+    def feed(self,inputFood:'Consumables') -> float:
         returnPrice = 0.0
         if inputFood.AffectsFeed:
             self.IsHungry = False
