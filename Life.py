@@ -117,7 +117,7 @@ class Pets(GameObject):
     def IsEquipped(self,inputIsEquipped:bool):
         self.__isEquipped = inputIsEquipped
     @staticmethod
-    def handleMultiplePets(inputPet:'Pets',optionList:list,functionToBeCalled) -> bool:                                     # TODO: MAKE DECORATOR
+    def handleMultiplePets(inputPet:'Pets',optionList:list,functionToBeCalled) -> bool:
         while True:
             try:
                 StringPlus(f"you have multiple of {inputPet.Name}\n").printSlow()
@@ -145,7 +145,7 @@ class Pets(GameObject):
             self.IsHungry = inputHunger
         def handleThirst(inputThirst:bool):
             self.IsThirsty = inputThirst
-        if SystemFunctions.weightedRandomChoice(((True,3),(False,5)),1)[0]:     # TODO: MAKE MORE READABLE
+        if SystemFunctions.weightedRandomChoice(((True,3),(False,5)),1)[0]:
             SystemFunctions.weightedRandomChoice(((handleHunger,1),(handleThirst,1)),1)[0]()
     def feed(self,inputFood:'Consumables') -> float:
         returnPrice = 0.0
@@ -212,8 +212,11 @@ class Collectables(GameObject):
 class Npc():
     def __init__(self,inputDictionary:dict):
         self.__name = inputDictionary["Name"]
-        self.__stock = inputDictionary["Stock"]
-        self.changeStockPrices()
+        self.__dialogue = inputDictionary["Dialogue"]
+        self.__stock = SystemFunctions.weightedRandomChoice(inputDictionary["Stock"],6)
+        for i in range(len(self.Stock)):
+            self.Stock[i] = self.Stock[i]["Type"](self.Stock[i])
+        self.changeStockProperties()
         self.__intelligence = random.randint(inputDictionary["Minimum Intelligence"],inputDictionary["Maximum Intelligence"])
         self.__maxIntellignece = inputDictionary["Maximum Intelligence"]
         self.__emotionalIntelligence = random.randint(inputDictionary["Minimum Emotional Intelligence"],inputDictionary["Maximum Emotional Intelligence"])
@@ -222,6 +225,9 @@ class Npc():
     @property
     def Name(self) -> str:
         return self.__name
+    @property
+    def Dialogue(self) -> str:
+        return self.__dialogue
     @property
     def Stock(self) -> list:
         return self.__stock
@@ -243,22 +249,35 @@ class Npc():
     @Balance.setter
     def Balance(self,inputBalance:float):
         self.__balance = inputBalance
-    def calculateSellPrice(self,inputItem:GameObject) -> float:
-        offset = (2,4) if self.Intelligence > self.EmotionalIntelligence else (-2,2)
+    def calculateItemPrice(self,sellDemand:bool,inputItem:GameObject) -> float:
+        if sellDemand:
+            offset = (2,4) if self.Intelligence > self.EmotionalIntelligence else (-2,2)
+        else:
+            offset = (-4,0) if self.Intelligence > self.EmotionalIntelligence else (0,5)
         return (inputItem.Price * (1 + (self.Intelligence / (1.5 * self.MaxIntelligence)))) + random.randint(offset[0],offset[1])
-    def calculateDemandPrice(self,inputItem:GameObject) -> float:
-        offset = (-4,0) if self.Intelligence > self.EmotionalIntelligence else (0,5)
-        return (inputItem.Price * (1 + (self.Intelligence / (1.5 * self.MaxIntelligence)))) + random.randint(offset[0],offset[1])
-    def changeStockPrices(self):
+    def changeStockProperties(self):
+        changed = []
         for i in self.Stock:
-            i.DemandPrice = self.calculateSellPrice(i)
+            if i.Name not in [o.Name for o in changed]:
+                i.DemandPrice = self.calculateItemPrice(False,i)
+                i.Quantity = random.randint(1,3)
+                changed.append(i)
+            else:
+                self.Stock.remove(i)
+    def greet(self):
+        StringPlus(self.Dialogue).printSlow()
+    def displayStock(self):
+        StringPlus("|--stock--|\n").printSlow()
+        for i in self.Stock:
+            StringPlus(f" - {i.Name} (${i.DemandPrice})\n")
+        StringPlus.barrier()
 class GameData:
     # PETS
     dog = {"Name":"Dog","Price":15.0,"Type":Pets}
     # CONSUMABLES
     apple = {"Name":"Apple","Price":1.5,"Type":Consumables,"Happiness Effect":1.0,"Affects Feed":True,"Affects Drink":False,"Consume Function":ConsumablesOptions.eat}
     # NPCS
-    tempTemplate = {"Name":"STR","Stock":[],"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0,"Balance":(0,0)}
+    tempTemplate = {"Name":"STR","Dialogue":"STR","Stock":(("",0),("",0)),"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0,"Balance":(0,0)}
 class Player:
     def __init__(self,name):
         self.__name = name
@@ -333,7 +352,7 @@ class Player:
             else:
                 return False
     def displayBalance(self):
-        StringPlus(f"your balance is: $ {self.Balance}\n").printSlow()
+        StringPlus(f"your balance is: ${self.Balance}\n").printSlow()
         StringPlus.barrier()
     def displayInventory(self,invFilter:Union[GameObject,None]) -> bool:
         if invFilter == None:
