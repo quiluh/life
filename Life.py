@@ -213,10 +213,6 @@ class Npc():
     def __init__(self,inputDictionary:dict):
         self.__name = inputDictionary["Name"]
         self.__dialogue = inputDictionary["Dialogue"]
-        self.__stock = SystemFunctions.weightedRandomChoice(inputDictionary["Stock"],6)
-        for i in range(len(self.Stock)):
-            self.Stock[i] = self.Stock[i]["Type"](self.Stock[i])
-        self.changeStockProperties()
         self.__intelligence = random.randint(inputDictionary["Minimum Intelligence"],inputDictionary["Maximum Intelligence"])
         self.__maxIntellignece = inputDictionary["Maximum Intelligence"]
         self.__emotionalIntelligence = random.randint(inputDictionary["Minimum Emotional Intelligence"],inputDictionary["Maximum Emotional Intelligence"])
@@ -227,9 +223,6 @@ class Npc():
     @property
     def Dialogue(self) -> str:
         return self.__dialogue
-    @property
-    def Stock(self) -> list:
-        return self.__stock
     @property
     def Intelligence(self) -> int:
         return self.__intelligence
@@ -242,6 +235,18 @@ class Npc():
     @property
     def MaxEmotionalIntelligence(self) -> int:
         return self.__maxEmotionalIntellignece
+    def greet(self):
+        StringPlus(self.Dialogue).printSlow()
+class Merchant(Npc):
+    def __init__(self,inputDictionary:dict):
+        super().__init__(inputDictionary)
+        self.__stock = SystemFunctions.weightedRandomChoice(inputDictionary["Stock"],6)
+        for i in range(len(self.Stock)):
+            self.Stock[i] = self.Stock[i]["Type"](self.Stock[i])
+        self.changeStockProperties()
+    @property
+    def Stock(self) -> list:
+        return self.__stock
     def calculateItemPrice(self,sellDemand:bool,inputItem:GameObject) -> float:
         if sellDemand:
             offset = (2,4) if self.Intelligence > self.EmotionalIntelligence else (-2,2)
@@ -257,8 +262,6 @@ class Npc():
                 changed.append(i)
             else:
                 self.Stock.remove(i)
-    def greet(self):
-        StringPlus(self.Dialogue).printSlow()
     def displayStock(self):
         StringPlus("|--stock--|\n").printSlow()
         for i in self.Stock:
@@ -283,7 +286,7 @@ class GameData:
     dog = {"Name":"Dog","Price":15.0,"Type":Pets}
     # CONSUMABLES
     apple = {"Name":"Apple","Price":1.5,"Type":Consumables,"Happiness Effect":1.0,"Affects Feed":True,"Affects Drink":False,"Consume Function":ConsumablesOptions.eat}
-    # NPCS
+    # NPC - MERCHANTS
     tempTemplate = {"Name":"STR","Dialogue":"STR","Stock":(("",0),("",0)),"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0}
 class Player:
     def __init__(self,name):
