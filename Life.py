@@ -213,6 +213,7 @@ class Npc():
     def __init__(self,inputDictionary:dict):
         self.__name = inputDictionary["Name"]
         self.__dialogue = inputDictionary["Dialogue"]
+        self.__interactOptions = inputDictionary["Interact Options"]
         self.__intelligence = random.randint(inputDictionary["Minimum Intelligence"],inputDictionary["Maximum Intelligence"])
         self.__maxIntellignece = inputDictionary["Maximum Intelligence"]
         self.__emotionalIntelligence = random.randint(inputDictionary["Minimum Emotional Intelligence"],inputDictionary["Maximum Emotional Intelligence"])
@@ -223,6 +224,9 @@ class Npc():
     @property
     def Dialogue(self) -> str:
         return self.__dialogue
+    @property
+    def InteractOptions(self) -> dict:
+        return self.__interactOptions
     @property
     def Intelligence(self) -> int:
         return self.__intelligence
@@ -237,6 +241,16 @@ class Npc():
         return self.__maxEmotionalIntellignece
     def greet(self):
         StringPlus(self.Dialogue).printSlow()
+    def interact(self,player:'Player') -> Union[bool,str]:
+        while True:
+            [StringPlus(f" - {i} ({self.InteractOptions[i]})\n").printSlow() for i in self.InteractOptions]
+            interactChoice = StringPlus("what is your action? (x)\n").inputSlow()
+            if StringPlus(interactChoice).ignoreFormat() == "x":
+                return False
+            elif StringPlus(interactChoice).ignoreFormat() in [self.InteractOptions[i] for i in self.InteractOptions]:
+                return [i for i in self.InteractOptions if StringPlus(interactChoice).ignoreFormat() == self.InteractOptions[i]][0]
+            StringPlus("that isn't an option\n").printSlow()
+            StringPlus.barrier()
 class Merchant(Npc):
     def __init__(self,inputDictionary:dict):
         super().__init__(inputDictionary)
@@ -281,13 +295,14 @@ class Merchant(Npc):
                 return True
         self.Stock.append(item)
         self.changeStockProperties()
+        return False
 class GameData:
     # PETS
     dog = {"Name":"Dog","Price":15.0,"Type":Pets}
     # CONSUMABLES
     apple = {"Name":"Apple","Price":1.5,"Type":Consumables,"Happiness Effect":1.0,"Affects Feed":True,"Affects Drink":False,"Consume Function":ConsumablesOptions.eat}
     # NPC - MERCHANTS
-    tempTemplate = {"Name":"STR","Dialogue":"STR","Stock":(("",0),("",0)),"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0}
+    tempTemplate = {"Name":"STR","Dialogue":"STR","Interact Options":{"buy":"b","sell":"s"},"Stock":(("",0),("",0)),"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0}
 class Player:
     def __init__(self,name):
         self.__name = name
@@ -455,6 +470,16 @@ class Player:
                         return False
                 StringPlus(f"that isn't an option\n").printSlow()
                 StringPlus.barrier()
+    def actInteractNpc(self,npc:Npc) -> bool:
+        def buyNpc():
+            pass
+        def sellNpc():
+            pass
+        npc.greet()
+        npcInteract = npc.interact()
+        if npcInteract == False:
+            return False
+        {"buy":buyNpc,"sell":sellNpc}[npcInteract]()
 class Main():
     @staticmethod
     def main():
