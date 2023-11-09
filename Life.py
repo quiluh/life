@@ -45,6 +45,7 @@ class GameObject:
         if inputDictionary != {}:
             self.__name = inputDictionary["Name"]
             self.__price = inputDictionary["Price"]
+            self.__tempPrice = self.Price
             self.__quantity = 1
             self.__demandPrice = inputDictionary["Price"]
     @property
@@ -59,6 +60,12 @@ class GameObject:
     @Quantity.setter
     def Quantity(self,inputQuantity:int):
         self.__quantity = int(SystemFunctions.minMax(inputQuantity,0,float("inf")))
+    @property
+    def TempPrice(self) -> float:
+        return self.__tempPrice
+    @TempPrice.setter
+    def TempPrice(self,inputTempPrice:float):
+        self.__tempPrice = int(SystemFunctions.minMax(inputTempPrice,0,float("inf")))
     @property
     def DemandPrice(self) -> float:
         return self.__demandPrice
@@ -218,6 +225,7 @@ class Npc():
         self.__maxIntellignece = inputDictionary["Maximum Intelligence"]
         self.__emotionalIntelligence = random.randint(inputDictionary["Minimum Emotional Intelligence"],inputDictionary["Maximum Emotional Intelligence"])
         self.__maxEmotionalIntellignece = inputDictionary["Maximum Emotional Intelligence"]
+        self.__targetType = inputDictionary["Target Type"]
     @property
     def Name(self) -> str:
         return self.__name
@@ -239,6 +247,9 @@ class Npc():
     @property
     def MaxEmotionalIntelligence(self) -> int:
         return self.__maxEmotionalIntellignece
+    @property
+    def TargetType(self) -> GameObject:
+        return self.__targetType
     def greet(self):
         StringPlus(self.Dialogue).printSlow()
     def interact(self,player:'Player') -> Union[bool,str]:
@@ -281,13 +292,14 @@ class Merchant(Npc):
         for i in self.Stock:
             StringPlus(f" - {i.Name} (${i.DemandPrice})\n")
         StringPlus.barrier()
-    def sellItem(self,item:GameObject):
+    def sellItem(self,item:GameObject) -> bool:
         for i in self.Stock:
             if (i.Name,i.Type) == (item.Name,item.Type):
                 i.Quantity -= 1
                 if i.Quantity == 0:
                     del i
-                break
+                return True
+        return False
     def buyItem(self,item:GameObject) -> bool:
         for i in self.Stock:
             if (i.Name,i.Type) == (item.Name,item.Type):
@@ -302,7 +314,7 @@ class GameData:
     # CONSUMABLES
     apple = {"Name":"Apple","Price":1.5,"Type":Consumables,"Happiness Effect":1.0,"Affects Feed":True,"Affects Drink":False,"Consume Function":ConsumablesOptions.eat}
     # NPC - MERCHANTS
-    tempTemplate = {"Name":"STR","Dialogue":"STR","Interact Options":{"buy":"b","sell":"s"},"Stock":(("",0),("",0)),"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0}
+    tempTemplate = {"Name":"STR","Dialogue":"STR","Interact Options":{"buy":"b","sell":"s"},"Stock":(("",0),("",0)),"Target Type":GameObject,"Minimum Intelligence":0,"Maximum Intelligence":0,"Minimum Emotional Intelligence":0,"Maximum Emotional Intelligence":0}
 class Player:
     def __init__(self,name):
         self.__name = name
@@ -375,6 +387,15 @@ class Player:
                 return True
             else:
                 return False
+    def sellItem(self,inputObject:GameObject) -> bool:
+        if inputObject in self.Inventory[inputObject.__class__]:
+            self.removeFromInventory(inputObject,None if inputObject.__class__ in (Consumables,Collectables) else inputObject.Age)
+            self.Balance += inputObject.TempPrice
+            StringPlus(f"you sold {inputObject.Name} for $ {inputObject.TempPrice}\n").printSlow()
+            StringPlus.barrier()
+            return True
+        else:
+            return False
     def displayBalance(self):
         StringPlus(f"your balance is: ${self.Balance}\n").printSlow()
         StringPlus.barrier()
@@ -384,7 +405,7 @@ class Player:
                 for i in self.Inventory:
                     if self.Inventory[i] != []:
                         StringPlus(f"|--{i({})}--|\n").printSlow()
-                        [StringPlus(f" - {o.Name} ({f'LVL {o.Level} - EQUIPPED' if ((o.__class__,self.EquippedPet) == (Pets,o)) else f'LVL {o.Level}' if (o.__class__ == Pets) else o.Quantity if (o.__class__ in (Consumables,Collectables)) else ''})\n").printSlow() for o in self.Inventory[i]]
+                        [StringPlus(f" - {o.Name} ({f'LVL {o.Level} - EQUIPPED' if ((o.__class__,self.EquippedPet) == (Pets,o)) else f'LVL {o.Level}' if (o.__class__ == Pets) else o.Quantity if (o.__class__ in (Consumables,Collectables)) else ''}) ( $ {i.TempPrice})\n").printSlow() for o in self.Inventory[i]]
                 StringPlus.barrier()
                 return True
             else:
@@ -394,7 +415,7 @@ class Player:
         elif issubclass(invFilter,GameObject):
             if self.Inventory[invFilter] != []:
                 StringPlus(f"|--{invFilter({})}--|\n").printSlow()
-                [StringPlus(f" - {i.Name} ({f'LVL {i.Level} - EQUIPPED' if ((invFilter,self.EquippedPet) == (Pets,i)) else f'LVL {i.Level}' if (invFilter == Pets) else i.Quantity if (invFilter in (Consumables,Collectables)) else ''})\n").printSlow() for i in self.Inventory[invFilter]]
+                [StringPlus(f" - {i.Name} ({f'LVL {i.Level} - EQUIPPED' if ((invFilter,self.EquippedPet) == (Pets,i)) else f'LVL {i.Level}' if (invFilter == Pets) else i.Quantity if (invFilter in (Consumables,Collectables)) else ''}) ( $ {i.TempPrice})\n").printSlow() for i in self.Inventory[invFilter]]
                 StringPlus.barrier()
                 return True
             else:
@@ -471,15 +492,23 @@ class Player:
                 StringPlus(f"that isn't an option\n").printSlow()
                 StringPlus.barrier()
     def actInteractNpc(self,npc:Npc) -> bool:
-        def buyNpc():
-            pass
-        def sellNpc():
-            pass
-        npc.greet()
-        npcInteract = npc.interact()
-        if npcInteract == False:
-            return False
-        {"buy":buyNpc,"sell":sellNpc}[npcInteract]()
+        if npc.__class__ == Merchant:
+            def buyNpc(npc:Npc):
+                pass
+            def sellNpc(npc:Union[Npc,Merchant]):
+                while True:
+                    if not self.displayInventory(npc.TargetType):
+                        return
+                    sellChoice = StringPlus(f"what do you want to sell?\n").inputSlow()
+                    for i in self.Inventory[npc.TargetType]:
+                        if i.Name == StringPlus(sellChoice).ignoreFormat():
+                            npc.buyItem(i)
+                            self.sellItem(i)
+            npc.greet()
+            npcInteract = npc.interact(npc)
+            if npcInteract == False:
+                return False
+            {"buy":buyNpc,"sell":sellNpc}[npcInteract]()
 class Main():
     @staticmethod
     def main():
