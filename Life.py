@@ -124,12 +124,11 @@ class Pets(GameObject):
     def IsEquipped(self,inputIsEquipped:bool):
         self.__isEquipped = inputIsEquipped
     @staticmethod
-    def handleMultiplePets(inputPet:'Pets',optionList:list,functionToBeCalled) -> bool:
+    def handleMultiplePets(inputPet:'Pets',optionList:list) -> 'Pets':
         while True:
             try:
                 StringPlus(f"you have multiple of {inputPet.Name}\n").printSlow()
-                for i in optionList:
-                    StringPlus(f" - {i.Name} (LVL {i.Level}{' - EQUIPPED' if i.IsEquipped else ''})\n").printSlow()
+                [StringPlus(f" - {i.Name} (LVL {i.Level}{' - EQUIPPED' if i.IsEquipped else ''})\n").printSlow() for i in optionList]
                 petChoice = StringPlus("Which one? (LVL)\n").inputSlow()
                 if StringPlus(petChoice).ignoreFormat() == "x":
                     return False
@@ -140,8 +139,7 @@ class Pets(GameObject):
                 StringPlus.barrier()
             for i in optionList:
                 if i.Level == petChoice:
-                    functionToBeCalled(i)
-                    return True
+                    return i
             StringPlus(f"no pet had a level of {petChoice}\n")
             StringPlus.barrier()
     def display(self):
@@ -289,8 +287,7 @@ class Merchant(Npc):
                 self.Stock.remove(i)
     def displayStock(self):
         StringPlus("|--stock--|\n").printSlow()
-        for i in self.Stock:
-            StringPlus(f" - {i.Name} (${i.DemandPrice})\n")
+        [StringPlus(f" - {i.Name} ( $ {i.DemandPrice})\n").printSlow() for i in self.Stock]
         StringPlus.barrier()
     def sellItem(self,item:GameObject) -> bool:
         for i in self.Stock:
@@ -473,11 +470,8 @@ class Player:
                             {Pets:optionList.append,Consumables:self.consume}[actionDict["Filter"]](i)
                             if i.__class__ != Pets:
                                 return True
-                    if len(optionList) > 1:
-                        Pets.handleMultiplePets(optionList[0],optionList,self.equipPet)
-                        return True
-                    elif len(optionList) == 1:
-                        self.equipPet(optionList[0])
+                    if len(optionList) >= 1:
+                        self.equipPet(optionList[0] if len(optionList) == 1 else Pets.handleMultiplePets(optionList[0],optionList) if len(optionList) > 1 else None)
                         return True
                     StringPlus(f"that isn't an option\n").printSlow()
                     StringPlus.barrier()
@@ -493,17 +487,18 @@ class Player:
                 StringPlus.barrier()
     def actInteractNpc(self,npc:Npc) -> bool:
         if npc.__class__ == Merchant:
-            def buyNpc(npc:Npc):
+            def buyNpc(npc:Merchant):
                 pass
-            def sellNpc(npc:Union[Npc,Merchant]):
+            def sellNpc(npc:Merchant) -> bool:
                 while True:
                     if not self.displayInventory(npc.TargetType):
-                        return
+                        return False
                     sellChoice = StringPlus(f"what do you want to sell?\n").inputSlow()
                     for i in self.Inventory[npc.TargetType]:
                         if i.Name == StringPlus(sellChoice).ignoreFormat():
                             npc.buyItem(i)
                             self.sellItem(i)
+                            return True
             npc.greet()
             npcInteract = npc.interact(npc)
             if npcInteract == False:
